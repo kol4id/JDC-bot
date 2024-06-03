@@ -2,7 +2,11 @@ import {Address, TonClient} from 'ton'
 
 const client = new TonClient({endpoint: process.env.TON_CENTER_ENDPOINT!})
 
-export async function getWalletBalance(walletAddress: string): Promise<bigint>{
+const NANOTON_DIV = 1_000_000_000;
+
+export async function getWalletBalance(walletAddress: string): Promise<number>{
     const address = Address.parse(walletAddress);
-    return await client.getBalance(address);
+    const nanoBalance = await client.getBalance(address);
+    const balanceInTon = Number(nanoBalance) /  NANOTON_DIV;
+    return Number(balanceInTon.toFixed(5));
 }
