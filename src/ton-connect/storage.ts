@@ -1,7 +1,15 @@
 import { IStorage } from "@tonconnect/sdk";
+import { Redis } from 'ioredis'
+
+let client:Redis;
 
 //TODO(kol4id): swap to redis 
-const storage = new Map<string, string>();
+
+export async function initRedisClient(): Promise<void> {
+    // await client.connect();
+    client = new Redis({port: 6000})
+    client.on('error', err => console.log('Redis Client error', err));
+}
 
 export class TonConnectStorage implements IStorage{
     constructor(private readonly chatId: number){}
@@ -11,14 +19,14 @@ export class TonConnectStorage implements IStorage{
     }
 
     async removeItem(key: string): Promise<void>{
-        storage.delete(this.getKey(key));
+        client.del(this.getKey(key));
     }
 
     async setItem(key: string, value: string): Promise<void>{
-        storage.set(this.getKey(key), value);
+        client.set(this.getKey(key), value);
     }    
 
     async getItem(key: string): Promise<string | null>{
-        return storage.get(this.getKey(key)) || null;
+        return client.get(this.getKey(key)) || null;
     }
 }
