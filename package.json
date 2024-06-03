@@ -14,13 +14,14 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node-telegram-bot-api": "^0.64.6",
+    "@types/qrcode": "^1.5.5",
     "dotenv": "^16.4.5",
+    "qrcode": "^1.5.3",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.4.5"
   },
   "dependencies": {
     "@tonconnect/sdk": "^3.0.3",
-    "node-telegram-bot-api": "^0.66.0",
-    "qrcode": "^1.5.3"
+    "node-telegram-bot-api": "^0.66.0"
   }
 }
