@@ -5,32 +5,36 @@ import { getWalletInfo, getWallets } from "./ton-connect/wallet";
 import QRCode from 'qrcode';
 import { getWalletBalance } from "./ton-core/tonWallet";
 import TonConnect from "@tonconnect/sdk";
+import { Context } from "telegraf";
 
-export async function handleDisconect(msg: TelegramBot.Message): Promise<void>{
-    const chatId = msg.chat.id;
+
+export async function handleDisconect(ctx: Context): Promise<void>{
+    const chatId = ctx.chat?.id!;
     const connector = getConnector(chatId);
 
     if (!connector.connected){
-        await handleWalletConnection(chatId, connector, `You didn't connect a wallet`);
+        await handleWalletConnection(ctx, connector, `You didn't connect a wallet`);
+        return;
     }
 
     await connector.disconnect();
-    await sendMessage(chatId, 'Wallet has been disconnected');
+    await sendMessage(ctx, 'Wallet has been disconnected');
 }
 
-export async function handleStart(msg: TelegramBot.Message): Promise<void>{
-    const chatId = msg.chat.id;
-    await sendMessage(chatId, 'Hi 👋, I am the official bot of the Melonia project 🍈. To start, send me the command /connect - to connect your tonkeeper wallet');
+export async function handleStart(ctx: Context): Promise<void>{
+    const chatId = ctx.chat?.id!;
+    await sendMessage(ctx, 'Hi 👋, I am the official bot of the Melonia project 🍈. To start, send me the command /connect - to connect your tonkeeper wallet');
 }
 
-export async function handleConnect(msg: TelegramBot.Message): Promise<void>{
-    const chatId = msg.chat.id;
+export async function handleConnect(ctx: Context): Promise<void>{
+    const chatId = ctx.chat?.id!;
     const connector = getConnector(chatId, () => unsubscribe());
-    await connector.restoreConnection();
+    // await connector.restoreConnection();
+    // await handleWalletConnection(chatId, connector, `You didn't connect a wallet`);
 
     if (connector.connected) {
         const connectedName = (await getWalletInfo(connector.wallet!.device.appName))?.name || connector.wallet!.device.appName;
-        await sendMessage(chatId, `You have already connected ${connectedName} wallet\n\nDisconnect wallet first to connect new one`)
+        await sendMessage(ctx, `You have already connected ${connectedName} wallet\n\nDisconnect wallet first to connect new one`)
         return;
     }
 
@@ -38,29 +42,25 @@ export async function handleConnect(msg: TelegramBot.Message): Promise<void>{
         if (wallet) {
             const walletName =
                 (await getWalletInfo(wallet.device.appName))?.name || wallet.device.appName;
-            await sendMessage(chatId, `${walletName} wallet connected successfully`);
+            await sendMessage(ctx, `${walletName} wallet connected successfully`);
             unsubscribe();
         }
     });
 
-    const wallets = await getWallets();
-    const tonkeeper = wallets.find(wallet => wallet.appName === 'tonkeeper')!;
-    const link = connector.connect({
-        bridgeUrl: tonkeeper?.bridgeUrl,
-        universalLink: tonkeeper?.universalLink
-    });
     
+    const wallets = await getWallets()
+    const link = connector.connect(wallets);
     const image = await QRCode.toBuffer(link);
 
-    await bot.sendPhoto(chatId, image, {
+    await ctx.replyWithPhoto({source: image}, {
         caption: 'Scan this QR code to connect your Tonkeeper wallet. \nOr just click on the "Open Link" button below',
         reply_markup: {
             inline_keyboard: [
                 [
-                    // {
-                    //     text: 'Choose a Wallet',
-                    //     callback_data: JSON.stringify({method: 'chose_wallet'})
-                    // },
+                    {
+                        text: 'Choose a Wallet',
+                        callback_data: JSON.stringify({method: 'chose_wallet'})
+                    },
                     {
                         text: 'Open Link',
                         url: `https://ton-connect.github.io/open-tc?connect=${encodeURIComponent(
@@ -73,31 +73,30 @@ export async function handleConnect(msg: TelegramBot.Message): Promise<void>{
     });
 }
 
-export async function handleBalance(msg: TelegramBot.Message): Promise<void>{
-    const chatId = msg.chat.id;
+export async function handleBalance(ctx: Context): Promise<void>{
+    console.log('balance called')
+    const chatId = ctx.chat?.id!;
     const connector = getConnector(chatId);
-    await connector.restoreConnection();
+    // await connector.restoreConnection();
 
     if (!connector.connected) {
-        await sendMessage(chatId, "You didn't connect a wallet");
+        await sendMessage(ctx, "You didn't connect a wallet");
         return;
     }
 
     const walletAddress = connector.account?.address!;
     const balance = await getWalletBalance(walletAddress);
-    await sendMessage(chatId, `Your wallet balance is: ${balance} TON`);    
+    await sendMessage(ctx, `Your wallet balance is: ${balance} TON`);    
 }
 
-
-
-async function sendMessage(chatId: number, text: string): Promise<void> {
-    await bot.sendMessage(chatId, text);
+async function sendMessage(ctx: Context, text: string): Promise<void> {
+    ctx.sendMessage(text);
 }
 
-async function handleWalletConnection(chatId: number, connector: TonConnect, errText: string): Promise<void>{
+async function handleWalletConnection(ctx: Context, connector: TonConnect, errText: string): Promise<void>{
     await connector.restoreConnection();
     if (!connector.connected) {
-        await sendMessage(chatId, errText);
+        await sendMessage(ctx, errText);
         return;
     }
 }
