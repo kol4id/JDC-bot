@@ -1,8 +1,8 @@
-import TelegramBot from 'node-telegram-bot-api';
 import * as process from 'process';
-import { Telegraf } from 'telegraf';
+import {Telegraf } from 'telegraf';
 
 const token = process.env.BOT_TOKEN!;
 export const bot = new Telegraf(token, {});
 bot.launch()
+
 //new TelegramBot(token, {polling: true});

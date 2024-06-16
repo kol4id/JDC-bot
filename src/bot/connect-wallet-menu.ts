@@ -1,7 +1,7 @@
-import { getWalletInfo, getWallets } from "./ton-connect/wallet";
+import { getWalletInfo, getWallets } from "../ton-connect/wallet";
 import { bot } from "./bot";
 import QRCode from 'qrcode';
-import { getConnector } from "./ton-connect/connector";
+import { getConnector } from "../ton-connect/connector";
 import { Context } from "telegraf";
 import { InlineKeyboardButton } from "@telegraf/types";
 import TonConnect, { WalletInfoRemote } from "@tonconnect/sdk";
