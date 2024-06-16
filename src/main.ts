@@ -1,16 +1,20 @@
 import dotenv from 'dotenv'
 dotenv.config();
 
-import { bot } from './bot';
+import { bot } from './bot/bot';
 import { initRedisClient } from './ton-connect/storage';
-import { handleBalance, handleConnect, handleDisconect, handleStart } from './commands-handlers';
+import {handleBalance, handleConnect, handleDisconect, handleStart, handleText } from './bot/commands-handlers';
 import { callbackQuery } from 'telegraf/filters'
-import { walletMenuCallbacks } from './connect-wallet-menu';
-
-
+import { walletMenuCallbacks } from './bot/connect-wallet-menu';
+import { connectDB } from './db/db';
+import { handleCoin } from './bot/coinCommands';
+import { initState } from './states';
+import { handleCollection } from './bot/collectionCommands';
 
 async function main(): Promise<void>{
     await initRedisClient();
+    await connectDB();
+    initState()
 
     try {
         //TODO(kol4id): create controller -> service system 
@@ -32,10 +36,15 @@ async function main(): Promise<void>{
         bot.command('connect', handleConnect);
         bot.command('disconnect', handleDisconect);
         bot.command('balance', handleBalance);    
+        bot.command('coin', handleCoin);
+        bot.command('collection', handleCollection);
+        bot.on('text', handleText);
+        
     } catch (err) {
         console.log(err)
         main();
     }
     
 }
+
 main();
