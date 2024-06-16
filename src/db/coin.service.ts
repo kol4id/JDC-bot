@@ -23,8 +23,13 @@ export class CoinRepository {
         return updatedCoin as any as ICoinDTO
     }
 
-    async getByAddress(address: string): Promise<ICoinDTO>{
+    async findByAddress(address: string): Promise<ICoinDTO>{
         const coin = await this.coinsModel.findOne({address: address}).lean();
         return coin as any as ICoinDTO
+    }
+
+    async findActiveCoins(): Promise<ICoinDTO[]>{
+        const coins = await this.coinsModel.find({isActive: true})
+        return coins as any as ICoinDTO[]
     }
 }

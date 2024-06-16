@@ -33,7 +33,7 @@ export async function addCoin(ctx: Context, splited: string[]): Promise<void> {
     const isActive = splited[3] === 'y';
     const address = Address.parse(splited[1]).toString();
 
-    const isExists = await coinRepository.getByAddress(address);
+    const isExists = await coinRepository.findByAddress(address);
     if (isExists) {
         ctx.sendMessage(`монета уже существует`)
         return
@@ -59,7 +59,7 @@ export async function editCoin(ctx: Context, splited: string[]): Promise<void>{
     const isActive = splited[3] === 'y';
     const address = Address.parse(splited[1]).toString();
 
-    const isExists = await coinRepository.getByAddress(address);
+    const isExists = await coinRepository.findByAddress(address);
     if (!isExists) {
         ctx.sendMessage(`монеты не существует`)
         return

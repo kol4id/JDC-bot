@@ -21,7 +21,7 @@ export class CollectionRepository {
         return updatedCollection as any as ICollectionDTO
     }
 
-    async getByAddress(address: string): Promise<ICollectionDTO>{
+    async findByAddress(address: string): Promise<ICollectionDTO>{
         const collection = await this.collectionsModel.findOne({address: address}).lean();
         return collection as any as ICollectionDTO
     }

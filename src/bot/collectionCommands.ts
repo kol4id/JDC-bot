@@ -34,7 +34,7 @@ export async function addCollection(ctx: Context, splited: string[]): Promise<vo
     const isActive = splited[3] === 'y';
     const address = Address.parse(splited[1]).toString();
 
-    const isExists = await collectionRepository.getByAddress(address);
+    const isExists = await collectionRepository.findByAddress(address);
     if (isExists) {
         ctx.sendMessage(`коллекция уже существует`)
         return
@@ -60,7 +60,7 @@ export async function editCollection(ctx: Context, splited: string[]): Promise<v
     const isActive = splited[3] === 'y';
     const address = Address.parse(splited[1]).toString();
 
-    const isExists = await collectionRepository.getByAddress(address);
+    const isExists = await collectionRepository.findByAddress(address);
     if (!isExists) {
         ctx.sendMessage(`коллекции не существует`)
         return
