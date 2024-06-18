@@ -10,11 +10,25 @@ import { connectDB } from './db/db';
 import { handleCoin } from './bot/coinCommands';
 import { initState } from './states';
 import { handleCollection } from './bot/collectionCommands';
+import { Screan } from './ton-screan/screan';
+import { CoinRepository } from './db/coin.service';
+import Coins from './db/schemas/coin.schema';
+import { CollectionRepository } from './db/collection.service';
+import Collections from './db/schemas/collection.schema';
+import { aasda } from './ton-core/tonWallet';
+import { WalletRepository } from './db/wallet.service';
+import Wallets from './db/schemas/wallet.schema';
+
 
 async function main(): Promise<void>{
     await initRedisClient();
     await connectDB();
-    initState()
+    initState();
+    const screan = new Screan(
+        new CoinRepository(Coins), 
+        new CollectionRepository(Collections),
+        new WalletRepository(Wallets)
+    );
 
     try {
         //TODO(kol4id): create controller -> service system 
@@ -38,6 +52,8 @@ async function main(): Promise<void>{
         bot.command('balance', handleBalance);    
         bot.command('coin', handleCoin);
         bot.command('collection', handleCollection);
+        bot.command('screan', screan.screan)
+        bot.command('screan1', aasda)
         bot.on('text', handleText);
         
     } catch (err) {
