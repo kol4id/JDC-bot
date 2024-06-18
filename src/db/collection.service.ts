@@ -13,16 +13,21 @@ export class CollectionRepository {
 
     async create(collection: ICollectionDTO): Promise<ICollectionDTO>{
         const newCollection = (await this.collectionsModel.create(collection));
-        return newCollection as any as ICollectionDTO
+        return newCollection as any as ICollectionDTO;
     }
 
     async edit(collection: ICollectionDTO): Promise<ICollectionDTO>{
         const updatedCollection = await this.collectionsModel.findOneAndUpdate({address: collection.address}, collection, projection).lean();
-        return updatedCollection as any as ICollectionDTO
+        return updatedCollection as any as ICollectionDTO;
     }
 
     async findByAddress(address: string): Promise<ICollectionDTO>{
         const collection = await this.collectionsModel.findOne({address: address}).lean();
-        return collection as any as ICollectionDTO
+        return collection as any as ICollectionDTO;
+    }
+
+    async findActiveCollections(): Promise<ICollectionDTO[]>{
+        const collections = await this.collectionsModel.find({isActive: true}).lean();
+        return collections as any as ICollectionDTO[];
     }
 }

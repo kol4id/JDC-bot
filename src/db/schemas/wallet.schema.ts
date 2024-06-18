@@ -2,7 +2,7 @@ import mongoose, {Schema, Document} from "mongoose"
 
 export interface INFTCollection {
     collectionAddress: string;
-    NFTAddress: string[];
+    NFTAddress?: string[];
     points: number;
 }
 
@@ -14,12 +14,12 @@ export interface ICoinsHold {
 
 export interface IWalletDTO {
     address: string;
-    NFTCollections?: INFTCollection;
-    NFTPointsTotal: number;
-    coinsHold?: ICoinsHold;
-    coinsPointsTotal: number;
-    walletPointsTotal: number;
-    isActive: boolean;
+    NFTCollections?: INFTCollection[];
+    NFTPointsTotal?: number;
+    coinsHold?: ICoinsHold[];
+    coinsPointsTotal?: number;
+    walletPointsTotal?: number;
+    isActive?: boolean;
 }
 
 interface IWallet extends IWalletDTO, Document {}
