@@ -127,7 +127,7 @@ export async function handleBalance(ctx: Context): Promise<void>{
 
     // const walletAddress = connector.account?.address!;
     // const balance = await getWalletBalance(walletAddress);
-    await getTokenHolders();
+    // await getTokenHolders();
     await sendMessage(ctx, `Your wallet balance is: TON`);    
     // await sendMessage(ctx, `Your wallet balance is: ${balance} TON`);    
 }
