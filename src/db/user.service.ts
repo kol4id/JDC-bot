@@ -19,12 +19,45 @@ export class UserRepository {
     }
 
     async edit(user: IUserDTO): Promise<IUserDTO>{
-        const updatedUser = await this.usersModel.findOneAndUpdate({chatId: user.chatId}, user, projection).lean();
+        const updatedUser = await this.usersModel.updateOne({chatId: user.chatId}, user).lean();
         return updatedUser as any as IUserDTO
     }
 
-    async getById(chatId: number): Promise<IUserDTO>{
+    async addWallet(chatId: number, wallet: string){
+        await this.usersModel.findOneAndUpdate({chatId}, {$push: {wallets: wallet}})
+    }
+
+    async findById(chatId: number): Promise<IUserDTO>{
         const user = await this.usersModel.findOne({chatId: chatId}).lean();
         return user as any as IUserDTO
+    }
+
+    async findAllUsers(): Promise<IUserDTO[]>{
+        const users = await this.usersModel.find().lean()
+        return users as any as IUserDTO[];
+    }
+
+    async updateMany(users: IUserDTO[]){
+        const bulkOps = users.map(user => {
+            return {
+                updateOne: {
+                    filter: { chatId: user.chatId },
+                    update: {
+                        $set: {
+                            pointsTotal: user.pointsTotal,
+                            tier: user.tier
+                        }
+                    },
+                    upsert: true
+                }
+            };
+        });
+        
+        try {
+            await this.usersModel.bulkWrite(bulkOps);
+            console.log('Bulk write operation successful');
+        } catch (error) {
+            console.error('Error during bulk write operation:', error);
+        }
     }
 }
