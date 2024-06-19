@@ -2,7 +2,7 @@ import { getConnector } from "../ton-connect/connector";
 import { bot } from "./bot";
 import { getWalletInfo, getWallets } from "../ton-connect/wallet";
 import QRCode from 'qrcode';
-import { getTokenHolders, getWalletBalance } from "../ton-core/tonWallet";
+import { getTokenHolders, getWalletBalance, hexToStringAddr } from "../ton-core/tonWallet";
 import TonConnect from "@tonconnect/sdk";
 import { Context } from "telegraf";
 import { handleCoinInput } from "./coinCommands";
@@ -10,11 +10,12 @@ import {majorStage, userStage} from "../states";
 import { accessGuard } from "./guard";
 import { handleCollectionInput } from "./collectionCommands";
 import { UserRepository } from "../db/user.service";
-import Users from "../db/schemas/user.schema";
+import Users, { IUserDTO } from "../db/schemas/user.schema";
 
 let newConnectRequestListenersMap = new Map<number, () => void>();
 
 const userRepository = new UserRepository(Users);
+export const users = new Map<number, IUserDTO>();
 
 export async function handleDisconect(ctx: Context): Promise<void>{
     const chatId = ctx.chat?.id!;
@@ -31,7 +32,11 @@ export async function handleDisconect(ctx: Context): Promise<void>{
 
 export async function handleStart(ctx: Context): Promise<void>{
     const chatId = ctx.chat?.id!;
-    await sendMessage(ctx, 'Hi 👋, I am the official bot of the Melonia project 🍈. To start, send me the command /connect - to connect your tonkeeper wallet');
+    const user = await getUser(ctx);
+    user
+        ?   await sendMessage(ctx, `Привет, ${ctx.message?.from.username}, 👋 а я тебя знаю `)
+        :   await sendMessage(ctx, `Привет, ${ctx.message?.from.username}, для начала подключай свой кошелек /connect давай узнаем твои очки 😉\n\nHello, ${ctx.message?.from.username}, to get started, connect your wallet /connect let's find out your points 😉`)
+    
 }
 
 export async function handleConnect(ctx: Context): Promise<void>{
@@ -47,17 +52,14 @@ export async function handleConnect(ctx: Context): Promise<void>{
     });
 
     if (connector.connected) {
-        const connectedName = (await getWalletInfo(connector.wallet!.device.appName))?.name || connector.wallet!.device.appName;
-        await sendMessage(ctx, `You have already connected ${connectedName} wallet\n\nDisconnect wallet first to connect new one`)
-        return;
+        connector.disconnect()
     }
 
     const unsubscribe = connector.onStatusChange(async wallet => {
         if (wallet) {
             await deleteMessage();
-            const walletName =
-                (await getWalletInfo(wallet.device.appName))?.name || wallet.device.appName;
-            await sendMessage(ctx, `${walletName} wallet connected successfully`);
+            await updateUser(ctx, wallet);
+            connector.disconnect()
             unsubscribe();
             newConnectRequestListenersMap.delete(chatId);
         }
@@ -117,18 +119,18 @@ export async function handleText(ctx: Context): Promise<void>{
 export async function handleBalance(ctx: Context): Promise<void>{
     console.log('balance called')
     const chatId = ctx.chat?.id!;
-    // const connector = getConnector(chatId);
-    // await connector.restoreConnection();
+    const connector = getConnector(chatId);
+    await connector.restoreConnection();
 
-    // if (!connector.connected) {
-    //     await sendMessage(ctx, "You didn't connect a wallet");
-    //     return;
-    // }
+    if (!connector.connected) {
+        await sendMessage(ctx, "You didn't connect a wallet");
+        return;
+    }
 
-    // const walletAddress = connector.account?.address!;
-    // const balance = await getWalletBalance(walletAddress);
+    const walletAddress = connector.account?.address!;
+    const balance = await getWalletBalance(walletAddress);
     // await getTokenHolders();
-    await sendMessage(ctx, `Your wallet balance is: TON`);    
+    await sendMessage(ctx, `Your wallet balance is: ${balance} TON`);    
     // await sendMessage(ctx, `Your wallet balance is: ${balance} TON`);    
 }
 
@@ -148,3 +150,40 @@ async function handleWalletConnection(ctx: Context, connector: TonConnect, errTe
 export const isPrivateChat = (ctx: Context) => {
     return ctx.chat?.type === 'private';
 };
+
+async function getUser(ctx: Context): Promise<IUserDTO>{
+    const chatId = ctx.message?.from.id!;
+    let user = users.get(chatId);
+    if (!user){
+        user = await userRepository.findById(chatId);
+        if (!user) {
+            user = await userRepository.create({
+                chatId: chatId,
+                userName: ctx.message?.from.username,
+                pointsTotal: 0,
+                tier: 'bronze'
+            })
+        }
+        users.set(chatId, user);
+    }
+    return user 
+}
+
+
+async function updateUser(ctx: Context, wallet: any){
+    const chatId = ctx.message?.from.id!;
+    const user = await getUser(ctx);
+    const walletName =
+                (await getWalletInfo(wallet.device.appName))?.name || wallet.device.appName;
+
+    if (user.wallets?.find(wall => wall == hexToStringAddr(wallet.account.address))){
+        await sendMessage(ctx, `${walletName} уже подключен`);
+        return;
+    }       
+    
+    user.wallets?.push(hexToStringAddr(wallet.account.address));
+    user.userName = ctx.message?.from.username;
+    userRepository.edit(user);
+    users.set(chatId, user);
+    await sendMessage(ctx, `${walletName} wallet connected successfully`);
+}
