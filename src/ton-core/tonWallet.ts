@@ -73,7 +73,10 @@ export const fromNano = async(nanoBalance: bigint): Promise<number> => {
     return Number(balance.toFixed(5))
 }
 
-
 export const stringToHexAddr = (addr: string) =>{
     return Address.parse(addr).toRawString();
+}
+
+export const hexToStringAddr = (addr: string) =>{
+    return Address.parse(addr).toString();
 }
