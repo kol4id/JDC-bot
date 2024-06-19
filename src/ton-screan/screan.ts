@@ -3,12 +3,13 @@ import { CoinRepository } from "../db/coin.service";
 import { ICoinDTO } from "../db/schemas/coin.schema";
 import Wallets, { ICoinsHold, INFTCollection, IWalletDTO } from "../db/schemas/wallet.schema";
 import { WalletRepository } from "../db/wallet.service";
-import { fromNano, getNftItems, getTokenHolders, stringToHexAddr } from "../ton-core/tonWallet";
+import { fromNano, getNftItems, getTokenHolders, hexToStringAddr, stringToHexAddr } from "../ton-core/tonWallet";
 import { performance } from 'perf_hooks';
 import { CollectionRepository } from "../db/collection.service";
 import { ICollectionDTO } from "../db/schemas/collection.schema";
-
-const walletRepository = new WalletRepository(Wallets);
+import { IUserDTO } from "../db/schemas/user.schema";
+import { UserRepository } from "../db/user.service";
+import { getTier } from "../states";
 
 let walletsLocal = new Map<string, IWalletDTO>();
 
@@ -16,7 +17,8 @@ export class Screan{
     constructor(
         private coinRepository: CoinRepository,
         private collectionRepository: CollectionRepository,
-        private walletRepository: WalletRepository
+        private walletRepository: WalletRepository,
+        private userRepository: UserRepository
     ){
         this.screan = this.screan.bind(this);
         this.processCoins = this.processCoins.bind(this);
@@ -24,15 +26,19 @@ export class Screan{
         this.processCollections = this.processCollections.bind(this);
         this.screenCollection = this.screenCollection.bind(this);
         this.processWallets = this.processWallets.bind(this);
+        this.processUsers = this.processUsers.bind(this);
     }
 
     async screan(){ 
         const coins = await this.coinRepository.findActiveCoins();
         const collections = await this.collectionRepository.findActiveCollections();
+        const users = await this.userRepository.findAllUsers();
+        console.log(users)
         await this.processCoins(coins);
         await this.processCollections(collections);
         await this.processWallets(walletsLocal);
-        await this.walletRepository.updateMany(Array.from(walletsLocal.values()))
+        await this.walletRepository.updateMany(Array.from(walletsLocal.values()));
+        await this.processUsers(users);
 
         walletsLocal = new Map<string, IWalletDTO>();
     }
@@ -57,7 +63,7 @@ export class Screan{
         }
 
         if (!wallet){
-            wallet = {address: holder.owner.address};
+            wallet = {address: hexToStringAddr(holder.owner.address)};
         }
 
         if (!wallet.coinsHold) wallet.coinsHold = [];
@@ -97,7 +103,7 @@ export class Screan{
         }
 
         if (!wallet){
-            wallet = {address: ownerAddress};
+            wallet = {address: hexToStringAddr(ownerAddress)};
         }
 
         if (!wallet.NFTCollections) wallet.NFTCollections = [];
@@ -116,5 +122,21 @@ export class Screan{
             wallet.walletPointsTotal = (wallet.coinsPointsTotal ?? 0) + (wallet.NFTPointsTotal ?? 0);
             walletsLocal.set(wallet.address, wallet);
         })
+    }
+
+    private async processUsers(users: IUserDTO[]){
+        users.forEach(user =>{
+            let points: number = 0;
+            user.wallets?.forEach(wall =>{
+                const wallet = walletsLocal.get(stringToHexAddr(wall));
+                if (wallet){
+                    points += wallet.walletPointsTotal ?? 0;
+                }
+            })
+            user.pointsTotal = points;
+            user.tier = getTier(points);
+        })
+
+        await this.userRepository.updateMany(users);
     }
 }
