@@ -1,5 +1,6 @@
 import { IStorage } from "@tonconnect/sdk";
 import { Redis } from 'ioredis'
+import { IUserDTO } from "../db/schemas/user.schema";
 
 let client:Redis;
 
@@ -28,5 +29,21 @@ export class TonConnectStorage implements IStorage{
 
     async getItem(key: string): Promise<string | null>{
         return client.get(this.getKey(key)) || null;
+    }
+}
+
+export class UserStorage{
+    async get(key: number): Promise<IUserDTO>{
+        let result = await client.get(key.toString());
+        if (result) result = JSON.parse(result); 
+        return result as any as IUserDTO;
+    }
+
+    async set(key: number, value: IUserDTO): Promise<void>{
+        client.set(key.toString(), JSON.stringify(value));
+    }
+
+    async remove(key: number): Promise<void>{
+        client.del(key.toString());
     }
 }
