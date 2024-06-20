@@ -7,7 +7,7 @@ type StoredConnectorData = {
     timeout: ReturnType<typeof setTimeout>;
     onConnectorExpired: ((connector: TonConnect) => void)[];
 }
-
+const manifets = process.env.MANIFEST_URL;
 const connectors = new Map<number, StoredConnectorData>();
 
 export function getConnector(chatId: number, onConnectorExpired?: (connector: TonConnect) => void): TonConnect{
@@ -19,7 +19,7 @@ export function getConnector(chatId: number, onConnectorExpired?: (connector: To
         storedItem = {
             connector: new TonConnect({
                 storage: new TonConnectStorage(chatId),
-                manifestUrl: process.env.MANIFEST_URL
+                manifestUrl: manifets
             }),
             onConnectorExpired: []
         } as any as StoredConnectorData;
