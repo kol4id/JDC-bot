@@ -1,4 +1,3 @@
-import { Model } from "mongoose";
 import Coins, { ICoinDTO } from "./schemas/coin.schema";
 
 

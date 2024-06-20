@@ -15,16 +15,17 @@ export class UserRepository {
 
     async create(user: IUserDTO): Promise<IUserDTO>{
         const newUser = (await this.usersModel.create(user));
-        return newUser as any as IUserDTO
+        return newUser as any as IUserDTO;
     }
 
     async edit(user: IUserDTO): Promise<IUserDTO>{
         const updatedUser = await this.usersModel.updateOne({chatId: user.chatId}, user).lean();
-        return updatedUser as any as IUserDTO
+        return updatedUser as any as IUserDTO;
     }
 
-    async addWallet(chatId: number, wallet: string){
-        await this.usersModel.findOneAndUpdate({chatId}, {$push: {wallets: wallet}})
+    async findByWallet(wallet: string){
+        const user = await this.usersModel.findOne({wallets: wallet}, projection).lean();
+        return user as any as IUserDTO;
     }
 
     async findById(chatId: number): Promise<IUserDTO>{
@@ -55,7 +56,6 @@ export class UserRepository {
         
         try {
             await this.usersModel.bulkWrite(bulkOps);
-            console.log('Bulk write operation successful');
         } catch (error) {
             console.error('Error during bulk write operation:', error);
         }
