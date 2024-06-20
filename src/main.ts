@@ -1,23 +1,22 @@
-import dotenv from 'dotenv'
+import dotenv from 'dotenv';
 dotenv.config();
 
 import { bot } from './bot/bot';
 import { initRedisClient } from './ton-connect/storage';
-import {handleBalance, handleConnect, handleDisconect, handleStart, handleText } from './bot/commands-handlers';
-import { callbackQuery } from 'telegraf/filters'
+import { handleConnect, handleDisconect, handleStart, handleStats, handleText } from './bot/commands-handlers';
+import { callbackQuery } from 'telegraf/filters';
 import { walletMenuCallbacks } from './bot/connect-wallet-menu';
 import { connectDB } from './db/db';
 import { handleCoin } from './bot/coinCommands';
 import { initState } from './states';
 import { handleCollection } from './bot/collectionCommands';
 import path from 'path';
-import { Worker, isMainThread, parentPort } from 'worker_threads';
+import { Worker } from 'worker_threads';
 import { Screan } from './ton-screan/screan';
 import { CoinRepository } from './db/coin.service';
 import Coins from './db/schemas/coin.schema';
 import { CollectionRepository } from './db/collection.service';
 import Collections from './db/schemas/collection.schema';
-import { aasda } from './ton-core/tonWallet';
 import { WalletRepository } from './db/wallet.service';
 import Wallets from './db/schemas/wallet.schema';
 import { UserRepository } from './db/user.service';
@@ -34,17 +33,17 @@ async function main(): Promise<void>{
         new UserRepository(Users)
     );
 
-    const performTask = async () => {
-        // Используем setInterval для периодического выполнения задачи
-        setInterval(async () => {
-            console.log('Task executed at', new Date().toISOString());
-            try {
-                await screan.screan(); // Убедитесь, что screan.screan() выполняется асинхронно
-            } catch (error) {
-                console.error('Error executing task:', error);
-            }
-        }, 30000);   
-    }
+    // const performTask = async () => {
+    //     // Используем setInterval для периодического выполнения задачи
+    //     setInterval(async () => {
+    //         console.log('Task executed at', new Date().toISOString());
+    //         try {
+    //             await screan.screan(); // Убедитесь, что screan.screan() выполняется асинхронно
+    //         } catch (error) {
+    //             console.error('Error executing task:', error);
+    //         }
+    //     }, 30000);   
+    // }
 
 
     try {
@@ -66,15 +65,15 @@ async function main(): Promise<void>{
         bot.command('start', handleStart)
         bot.command('connect', handleConnect);
         bot.command('disconnect', handleDisconect);
-        bot.command('balance', handleBalance);    
+        bot.command('my_stats', handleStats);    
         bot.command('coin', handleCoin);
         bot.command('collection', handleCollection);
         // bot.command('screan', screan.screan)
-        bot.command('screan1', aasda)
+        // bot.command('screan1', aasda)
         bot.on('text', handleText);
 
-        await performTask()
-        // startWorker()
+        // await performTask()
+        startWorker()
         
     } catch (err) {
         console.log(err)
@@ -84,7 +83,7 @@ async function main(): Promise<void>{
 }
 
 function startWorker() {
-    const worker = new Worker(path.resolve('src/screanTask.ts'));
+    const worker = new Worker(path.resolve('dist/screanTask.js'));
 
     worker.on('error', (error) => {
         console.error('Worker error:', error);
@@ -97,7 +96,5 @@ function startWorker() {
         }
     });
 }
-
-
 
 main();
