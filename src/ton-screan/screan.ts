@@ -1,17 +1,19 @@
-import { AccountAddress, NftItem, NftItems} from "tonapi-sdk-js";
+import { AccountAddress, NftItem } from "tonapi-sdk-js";
 import { CoinRepository } from "../db/coin.service";
 import { ICoinDTO } from "../db/schemas/coin.schema";
-import Wallets, { ICoinsHold, INFTCollection, IWalletDTO } from "../db/schemas/wallet.schema";
+import { ICoinsHold, INFTCollection, IWalletDTO } from "../db/schemas/wallet.schema";
 import { WalletRepository } from "../db/wallet.service";
 import { fromNano, getNftItems, getTokenHolders, hexToStringAddr, stringToHexAddr } from "../ton-core/tonWallet";
-import { performance } from 'perf_hooks';
 import { CollectionRepository } from "../db/collection.service";
 import { ICollectionDTO } from "../db/schemas/collection.schema";
 import { IUserDTO } from "../db/schemas/user.schema";
 import { UserRepository } from "../db/user.service";
 import { getTier } from "../states";
+import { UserStorage } from "../ton-connect/storage";
 
 let walletsLocal = new Map<string, IWalletDTO>();
+
+const userLocal = new UserStorage()
 
 export class Screan{
     constructor(
@@ -33,7 +35,7 @@ export class Screan{
         const coins = await this.coinRepository.findActiveCoins();
         const collections = await this.collectionRepository.findActiveCollections();
         const users = await this.userRepository.findAllUsers();
-        console.log(users)
+
         await this.processCoins(coins);
         await this.processCollections(collections);
         await this.processWallets(walletsLocal);
@@ -135,6 +137,7 @@ export class Screan{
             })
             user.pointsTotal = points;
             user.tier = getTier(points);
+            userLocal.remove(user.chatId);
         })
 
         await this.userRepository.updateMany(users);
