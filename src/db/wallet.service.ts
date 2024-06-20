@@ -31,6 +31,8 @@ export class WalletRepository {
 
     async updateMany(wallets: IWalletDTO[]): Promise<void>{
         // this.walletsModel.updateMany()
+        const newWalletsAddr = wallets.map(wallet => wallet.address);
+
         const bulkOps = wallets.map(wallet => {
             return {
                 updateOne: {
@@ -53,7 +55,7 @@ export class WalletRepository {
         
         try {
             await this.walletsModel.bulkWrite(bulkOps);
-            console.log('Bulk write operation successful');
+            await this.walletsModel.deleteMany({address: {$nin: newWalletsAddr}})
         } catch (error) {
             console.error('Error during bulk write operation:', error);
         }
