@@ -6,6 +6,7 @@ export interface IUserDTO {
     wallets?: string[];
     pointsTotal: number;
     tier: string;
+    updatedAt?: Date;
 }
 
 interface IUser extends IUserDTO, Document {}
